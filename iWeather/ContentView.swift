@@ -8,12 +8,35 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var viewModel = WeatherViewModel()
+
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+            TextField("Enter city", text: $viewModel.city)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding()
+
+            Button("Search", action: viewModel.search)
+                .padding()
+
+            if viewModel.isLoading {
+                ProgressView()
+            } else if let weather = viewModel.weather {
+                VStack(spacing: 8) {
+                    Text("\(weather.location.name), \(weather.location.country)")
+                        .font(.title2)
+                    Text("\(weather.current.temp_c, specifier: "%.1f")°C")
+                        .font(.largeTitle)
+                    Text(weather.current.condition.text)
+                }
+                .padding()
+            } else if let error = viewModel.errorMessage {
+                Text("Error: \(error)")
+                    .foregroundColor(.red)
+                    .padding()
+            }
+
+            Spacer()
         }
         .padding()
     }
