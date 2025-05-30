@@ -45,8 +45,29 @@ class WeatherService {
         }
         
         return URLSession.shared.dataTaskPublisher(for: url)
-            .map(\.data)
+            .tryMap { data, response in
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    throw URLError(.badServerResponse)
+                }
+
+                switch httpResponse.statusCode {
+                case 200:
+                    return data
+                case 404:
+                    throw NetworkError.notFound
+                case 500...599:
+                    throw NetworkError.serverError
+                default:
+                    throw NetworkError.unknownError(statusCode: httpResponse.statusCode)
+                }
+            }
             .decode(type: T.self, decoder: JSONDecoder())
+            .mapError { error in
+                if error is DecodingError {
+                    return NetworkError.decodingError
+                }
+                return error
+            }
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
     }

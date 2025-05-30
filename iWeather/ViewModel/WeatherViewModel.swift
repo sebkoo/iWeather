@@ -11,7 +11,7 @@ import Combine
 class WeatherViewModel: ObservableObject {
     @Published var city: String = ""
     @Published var weather: WeatherResponse?
-    @Published var isLoading = false
+    @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     @Published var forecast: [ForecastDay] = []
 
@@ -27,6 +27,7 @@ class WeatherViewModel: ObservableObject {
 
     func search() {
         guard !city.isEmpty else { return }
+
         isLoading = true
         errorMessage = nil
 
@@ -34,17 +35,31 @@ class WeatherViewModel: ObservableObject {
             service.fetchWeather(for: city),
             service.fetchForecast(for: city)
         )
-        .sink { completion in
+        .sink { [weak self] completion in
+            guard let self = self else { return }
             self.isLoading = false
+
             if case let .failure(error) = completion {
-                self.errorMessage = error.localizedDescription
+                self.handle(error: error)
             }
-        } receiveValue: { (weather, forecast) in
+        } receiveValue: { [weak self] (weather, forecast) in
+            guard let self = self else { return }
+
             self.weather = weather
             self.forecast = forecast
             self.cacheWeather(weather, city: self.city)
         }
         .store(in: &cancellables)
+    }
+
+    private func handle(error: Error) {
+        if let networkError = error as? NetworkError {
+            self.errorMessage = networkError.localizedDescription
+        } else if let urlError = error as? URLError {
+            self.errorMessage = "Network error: \(urlError.localizedDescription)"
+        } else {
+            self.errorMessage = "Unexpected error: \(error.localizedDescription)"
+        }
     }
 
     private func cacheWeather(_ weather: WeatherResponse, city: String) {
