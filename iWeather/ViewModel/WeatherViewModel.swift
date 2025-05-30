@@ -13,12 +13,11 @@ class WeatherViewModel: ObservableObject {
     @Published var city: String = ""
     @Published var weather: WeatherResponse?
     @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
+    @Published var errorMessage: String? = nil
     @Published var forecast: [ForecastDay] = []
 
-    private var cancellables = Set<AnyCancellable>()
-    private let service = WeatherService()
 
+    private let service = WeatherService()
     private let cityKey = "lastCity"
     private let weatherKey = "lastWeather"
 
@@ -29,28 +28,27 @@ class WeatherViewModel: ObservableObject {
     func search() {
         guard !city.isEmpty else { return }
 
+        Task { await fetchWeatherForecast() }
+    }
+
+    private func fetchWeatherForecast() async {
         isLoading = true
         errorMessage = nil
 
-        Publishers.Zip(
-            service.fetchWeather(for: city),
-            service.fetchForecast(for: city)
-        )
-        .sink { [weak self] completion in
-            guard let self = self else { return }
-            self.isLoading = false
+        do {
+            async let weatherResponse = service.fetchWeather(for: city)
+            async let forecastResponse = service.fetchForecast(for: city)
 
-            if case let .failure(error) = completion {
-                self.handle(error: error)
-            }
-        } receiveValue: { [weak self] (weather, forecast) in
-            guard let self = self else { return }
+            let (weather, forecast) = try await (weatherResponse, forecastResponse)
 
             self.weather = weather
             self.forecast = forecast
-            self.cacheWeather(weather, city: self.city)
+            cacheWeather(weather, city: city)
+        } catch {
+            handle(error: error)
         }
-        .store(in: &cancellables)
+
+        isLoading = false
     }
 
     private func handle(error: Error) {

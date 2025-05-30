@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var viewModel = WeatherViewModel()
+    @State private var showToast: Bool = false
 
     var body: some View {
         VStack(spacing: 16) {
