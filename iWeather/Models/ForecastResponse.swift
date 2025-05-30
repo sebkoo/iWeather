@@ -17,12 +17,13 @@ struct Forecast: Codable {
 
 struct ForecastDay: Codable, Identifiable {
     let date: String
-    let day: Day
+    let day: ForecastDetails
 
+    // For List use
     var id: String { date }
 }
 
-struct Day: Codable {
+struct ForecastDetails: Codable {
     let maxtemp_c: Double
     let mintemp_c: Double
     let condition: Condition

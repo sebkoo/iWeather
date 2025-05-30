@@ -11,16 +11,12 @@ struct ContentView: View {
     @StateObject private var viewModel = WeatherViewModel()
 
     var body: some View {
-        VStack {
-            TextField("Enter city", text: $viewModel.city)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding()
-
-            Button("Search", action: viewModel.search)
-                .padding()
+        VStack(spacing: 16) {
+            searchField
 
             if viewModel.isLoading {
-                ProgressView()
+                ProgressView("Loading weather...")
+                    .padding()
             } else if let weather = viewModel.weather {
                 VStack(spacing: 8) {
                     Text("\(weather.location.name), \(weather.location.country)")
@@ -30,12 +26,15 @@ struct ContentView: View {
                     Text(weather.current.condition.text)
                 }
                 .padding()
-            } else if let error = viewModel.errorMessage {
-                Text("Error: \(error)")
-                    .foregroundColor(.red)
+            } else if let errorMessage = viewModel.errorMessage {
+                ErrorView(message: errorMessage) {
+                    viewModel.search()
+                }
+            } else {
+                Text("Search for a city to get weather information.")
+                    .foregroundColor(.secondary)
                     .padding()
             }
-
             if !viewModel.forecast.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
@@ -49,6 +48,25 @@ struct ContentView: View {
             Spacer()
         }
         .padding()
+    }
+
+    private var searchField: some View {
+        HStack {
+            TextField("Enter city", text: $viewModel.city)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .submitLabel(.search)
+                .onSubmit {
+                    viewModel.search()
+                }
+
+            Button {
+                viewModel.search()
+            } label: {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(.blue)
+            }
+
+        }
     }
 }
 

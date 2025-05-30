@@ -8,7 +8,17 @@
 import Foundation
 import Combine
 
-class WeatherService {
+protocol WeatherServiceProtocol {
+    func fetchWeather(for city: String) -> AnyPublisher<WeatherResponse, Error>
+}
+
+final class WeatherService: WeatherServiceProtocol {
+    private let session: URLSession
+
+    init(session: URLSession = .shared) {
+        self.session = session
+    }
+
     func fetchWeather(for city: String) -> AnyPublisher<WeatherResponse, Error> {
         let urlString = "\(Constants.baseURL)/current.json?key=\(Constants.apiKey)&q=\(city)"
         return request(urlString: urlString)

@@ -42,7 +42,7 @@ struct ForecastRow: View {
 #Preview {
     ForecastRow(forecastDay: ForecastDay(
         date: "2025-06-01",
-        day: Day(
+        day: ForecastDetails(
             maxtemp_c: 28.4,
             mintemp_c: 18.9,
             condition: Condition(

@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 
+@MainActor
 class WeatherViewModel: ObservableObject {
     @Published var city: String = ""
     @Published var weather: WeatherResponse?
