@@ -21,4 +21,18 @@ class WeatherService {
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
     }
+
+    func fetchForecast(for city: String) -> AnyPublisher<[ForecastDay], Error> {
+        let urlString = "\(Constants.baseURL)/forecast.json?key=\(Constants.apiKey)&q=\(city)&days=7"
+        guard let url = URL(string: urlString) else {
+            return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
+        }
+
+        return URLSession.shared.dataTaskPublisher(for: url)
+            .map(\.data)
+            .decode(type: ForecastResponse.self, decoder: JSONDecoder())
+            .map { $0.forecast.forecastday }
+            .receive(on: DispatchQueue.main)
+            .eraseToAnyPublisher()
+    }
 }

@@ -13,6 +13,7 @@ class WeatherViewModel: ObservableObject {
     @Published var weather: WeatherResponse?
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var forecast: [ForecastDay] = []
 
     private var cancellables = Set<AnyCancellable>()
     private let service = WeatherService()
@@ -29,17 +30,21 @@ class WeatherViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        service.fetchWeather(for: city)
-            .sink { completion in
-                self.isLoading = false
-                if case let .failure(error) = completion {
-                    self.errorMessage = error.localizedDescription
-                }
-            } receiveValue: { response in
-                self.weather = response
-                self.cacheWeather(response, city: self.city)
+        Publishers.Zip(
+            service.fetchWeather(for: city),
+            service.fetchForecast(for: city)
+        )
+        .sink { completion in
+            self.isLoading = false
+            if case let .failure(error) = completion {
+                self.errorMessage = error.localizedDescription
             }
-            .store(in: &cancellables)
+        } receiveValue: { (weather, forecast) in
+            self.weather = weather
+            self.forecast = forecast
+            self.cacheWeather(weather, city: self.city)
+        }
+        .store(in: &cancellables)
     }
 
     private func cacheWeather(_ weather: WeatherResponse, city: String) {

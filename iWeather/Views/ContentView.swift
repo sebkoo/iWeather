@@ -36,6 +36,16 @@ struct ContentView: View {
                     .padding()
             }
 
+            if !viewModel.forecast.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(viewModel.forecast) { day in
+                            ForecastRow(forecastDay: day)
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+            }
             Spacer()
         }
         .padding()
