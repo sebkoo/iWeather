@@ -12,10 +12,10 @@ import Combine
 class WeatherViewModel: ObservableObject {
     @Published var city: String = ""
     @Published var weather: WeatherResponse?
-    @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
     @Published var forecast: [ForecastDay] = []
-
+    @Published var isLoading: Bool = false
+    @Published var isRefreshing: Bool = false
 
     private let service = WeatherService()
     private let cityKey = "lastCity"
@@ -25,30 +25,32 @@ class WeatherViewModel: ObservableObject {
         loadCachedWeather()
     }
 
-    func search() {
+    func search(isManual: Bool = true) async {
         guard !city.isEmpty else { return }
 
-        Task { await fetchWeatherForecast() }
-    }
+        if isManual {
+            isLoading = true
+        } else {
+            isRefreshing = true
+        }
 
-    private func fetchWeatherForecast() async {
-        isLoading = true
         errorMessage = nil
 
         do {
-            async let weatherResponse = service.fetchWeather(for: city)
-            async let forecastResponse = service.fetchForecast(for: city)
+            async let weather = service.fetchWeather(for: city)
+            async let forecast = service.fetchForecast(for: city)
 
-            let (weather, forecast) = try await (weatherResponse, forecastResponse)
+            let (weatherResult, forecastResult) = try await (weather, forecast)
 
-            self.weather = weather
-            self.forecast = forecast
-            cacheWeather(weather, city: city)
+            self.weather = weatherResult
+            self.forecast = forecastResult
+            self.cacheWeather(weatherResult, city: city)
         } catch {
             handle(error: error)
         }
 
         isLoading = false
+        isRefreshing = false
     }
 
     private func handle(error: Error) {
